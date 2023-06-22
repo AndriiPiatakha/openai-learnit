@@ -1,0 +1,107 @@
+{
+	"info": {
+		"_postman_id": "81d333e0-764c-4487-aebf-7b2078a6fae8",
+		"name": "OpenAI API GPT",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "CHAT Post messages Example #1",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer  {{openai_key}}",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"model\": \"gpt-3.5-turbo\",\r\n  \"messages\": [\r\n        {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, \r\n        {\"role\": \"user\", \"content\": \"Hey, how are you?\"}\r\n    ],\r\n  \"n\": 1,\r\n  \"temperature\": 2,\r\n  \"max_tokens\": 20,\r\n  \"stream\": false,\r\n  \"presence_penalty\": 2\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://api.openai.com/v1/chat/completions",
+					"protocol": "https",
+					"host": [
+						"api",
+						"openai",
+						"com"
+					],
+					"path": [
+						"v1",
+						"chat",
+						"completions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all available models",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{openai_key}}",
+						"type": "default"
+					}
+				],
+				"url": {
+					"raw": "https://api.openai.com/v1/models",
+					"protocol": "https",
+					"host": [
+						"api",
+						"openai",
+						"com"
+					],
+					"path": [
+						"v1",
+						"models"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get details about model",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer  {{openai_key}}",
+						"type": "default"
+					}
+				],
+				"url": {
+					"raw": "https://api.openai.com/v1/models/gpt-3.5-turbo",
+					"protocol": "https",
+					"host": [
+						"api",
+						"openai",
+						"com"
+					],
+					"path": [
+						"v1",
+						"models",
+						"gpt-3.5-turbo"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "openai_key",
+			"value": "<YOUR API KEY HERE>"
+		}
+	]
+}

@@ -1,6 +1,7 @@
 package com.itbulls.learnit.openai.entities;
 
 import java.util.List;
+import java.util.Map;
 
 public class GptResponse {
 	private String id;
@@ -9,7 +10,6 @@ public class GptResponse {
 	private String model;
 	private List<Choice> choices;
 	private Usage usage;
-	
 	
 	public String getId() {
 		return id;
@@ -111,7 +111,4 @@ public class GptResponse {
 		return "GptResponse [id=" + id + ", object=" + object + ", created=" + created + ", model=" + model
 				+ ", choices=" + choices + ", usage=" + usage + "]";
 	}
-	
-	
-
 }

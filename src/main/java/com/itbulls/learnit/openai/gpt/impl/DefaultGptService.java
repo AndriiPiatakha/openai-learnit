@@ -1,8 +1,10 @@
 package com.itbulls.learnit.openai.gpt.impl;
+import static com.itbulls.learnit.openai.entities.GptMessage.FUNCTION_ROLE;
 import static com.itbulls.learnit.openai.entities.GptMessage.USER_ROLE;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -21,9 +23,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
+import com.itbulls.learnit.openai.entities.GptFunction;
 import com.itbulls.learnit.openai.entities.GptMessage;
+import com.itbulls.learnit.openai.entities.GptMessage.FunctionCall;
 import com.itbulls.learnit.openai.entities.GptRequest;
 import com.itbulls.learnit.openai.entities.GptResponse;
+import com.itbulls.learnit.openai.entities.functions.Function;
+import com.itbulls.learnit.openai.entities.functions.FunctionFactory;
 import com.itbulls.learnit.openai.gpt.GptService;
 
 @Service
@@ -50,9 +56,12 @@ public class DefaultGptService implements GptService {
 	private Gson gson;
 	@Autowired
 	private HttpClient httpClient;
+	@Autowired
+	private FunctionFactory functionFactory;
+	
 	
 	@Override
-	public String getAnswerToSingleQuery(String query) {
+	public String getAnswerToSingleQuery(String query, GptFunction... gptFunctions) {
 		var request = new GptRequest();
 		request.setModel(model);
 		List<GptMessage> messages = new ArrayList<>();
@@ -62,22 +71,19 @@ public class DefaultGptService implements GptService {
 		request.setTemperature(temperature);
 		request.setPresencePenalty(presencePenalty);
 		request.setMaxTokens(maxTokens);
-		String requestBody = gson.toJson(request);
-		return getResponseFromGpt(requestBody);
+		if (gptFunctions != null && gptFunctions.length > 0) {
+			List<GptFunction> functions = Arrays.asList(gptFunctions);
+			request.setFunctions(functions);
+		}
+		return getResponseFromGpt(request);
 	}
 	
-	private String getResponseFromGpt(String requestBody) {
-		
-		String authorizationHeader = "Bearer " + chatGptApiKey;
-		String contentTypeHeader = "application/json";
-		HttpPost request = new HttpPost(chatGptUrl);
-		request.setHeader(HttpHeaders.AUTHORIZATION, authorizationHeader);
-		request.setHeader(HttpHeaders.CONTENT_TYPE, contentTypeHeader);
-		request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
+	private String getResponseFromGpt(GptRequest gptRequest) {
+		HttpPost httpRequest = prepareHttpRequest(gptRequest);
 		String response = "";
 		for (int i = 0; i < retryAttempts; i++) {
 			try {
-				response = extractGptResponseContent(request);
+				response = extractGptResponseContent(httpRequest, gptRequest);
 				return response;
 			} catch (IOException | RuntimeException e) { // This will capture also java.net.SocketException
 				e.printStackTrace();
@@ -90,18 +96,50 @@ public class DefaultGptService implements GptService {
 		}
 		return response;
 	}
+
+	private HttpPost prepareHttpRequest(GptRequest gptRequest) {
+		String requestBody = gson.toJson(gptRequest);
+		String authorizationHeader = "Bearer " + chatGptApiKey;
+		String contentTypeHeader = "application/json";
+		HttpPost httpRequest = new HttpPost(chatGptUrl);
+		httpRequest.setHeader(HttpHeaders.AUTHORIZATION, authorizationHeader);
+		httpRequest.setHeader(HttpHeaders.CONTENT_TYPE, contentTypeHeader);
+		httpRequest.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
+		return httpRequest;
+	}
 	
-	private String extractGptResponseContent(HttpPost request) throws IOException, ClientProtocolException {
+	private String extractGptResponseContent(HttpPost request, GptRequest gptRequest) throws IOException, ClientProtocolException {
 		HttpResponse response = httpClient.execute(request);
 		int statusCode = response.getStatusLine().getStatusCode();
 		HttpEntity entity = response.getEntity();
+		
 		if (entity != null) {
 			String responseBody = EntityUtils.toString(entity);
 			if (statusCode == HttpStatus.SC_BAD_REQUEST) {
 				return responseBody;
 			}
 			GptResponse gptResponse = gson.fromJson(responseBody, GptResponse.class);
-			return gptResponse.getChoices().get(0).getMessage().getContent();
+			GptMessage message = gptResponse.getChoices().get(0).getMessage();
+			
+			// optionally, we can check "finish_reason" of Choice object
+			// In case of function call request, the finish reason is "function_call"
+			FunctionCall functionCall = message.getFunctionCall();
+			if (functionCall != null) {
+				Function function = functionFactory.getFunctionByName(functionCall.getName());
+				String functionResponse = function.execute(functionCall.getArguments());
+				var gptMessage = new GptMessage();
+				gptMessage.setRole(FUNCTION_ROLE);
+				gptMessage.setName(functionCall.getName());
+				gptMessage.setContent(functionResponse);
+				gptRequest.getMessages().add(gptMessage);
+				
+				// Functions submitted also counted as prompt tokens
+				// to optimze tokens usage - I don't send functions list the second time
+				gptRequest.setFunctions(null);
+				return getResponseFromGpt(gptRequest);
+			}
+			
+			return message.getContent();
 		}
 		return "";
 	}

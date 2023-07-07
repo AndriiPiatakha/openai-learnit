@@ -2,24 +2,26 @@ package com.itbulls.learnit.openai;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.itbulls.learnit.openai.entities.GptFunction;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties;
-import com.itbulls.learnit.openai.entities.GptFunction.Parameters;
-import com.itbulls.learnit.openai.entities.WeatherParameterProperties.Location;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties.MeasurementUnit;
 import com.itbulls.learnit.openai.entities.functions.Function;
 import com.itbulls.learnit.openai.entities.functions.impl.GetWeatherInfoInLocationFunction;
+import com.slack.api.Slack;
+import com.slack.api.methods.MethodsClient;
 
 @Configuration
 public class BeansConfiguration {
+
+	@Value("${slack.security.token}")
+	private String slackSecurityToken;
 
 	@Bean
 	public Gson gson() {
@@ -41,7 +43,7 @@ public class BeansConfiguration {
 	public Function weatherFunctionCall() {
 		return new GetWeatherInfoInLocationFunction();
 	}
-	
+
 	@Bean("gptWeatherFunction")
 	public GptFunction gptWeatherInfoFunction() {
 		var function = new GptFunction();
@@ -49,15 +51,20 @@ public class BeansConfiguration {
 		function.setDescription("Get the current weather in a given location");
 		GptFunction.Parameters parameters = function.new Parameters();
 		parameters.setType("object");
-		parameters.setRequired(new String[]{"location"});
+		parameters.setRequired(new String[] { "location" });
 		WeatherParameterProperties properties = new WeatherParameterProperties();
 		properties.setLocation(properties.new Location("string", "The city and state, e.g. Vienna, Austria"));
-		properties.setUnit(properties.new MeasurementUnit("string", 
-				"One out of two possible values: celsius or fahrenheit. Temperature measurement unit", 
-				new String[] {MeasurementUnit.CELSIUS, MeasurementUnit.FAHRENHEIT}));
+		properties.setUnit(properties.new MeasurementUnit("string",
+				"One out of two possible values: celsius or fahrenheit. Temperature measurement unit",
+				new String[] { MeasurementUnit.CELSIUS, MeasurementUnit.FAHRENHEIT }));
 		parameters.setProperties(properties);
 		function.setParameters(parameters);
 		return function;
+	}
+
+	@Bean
+	public MethodsClient slackMethodsClient() {
+		return Slack.getInstance().methods(slackSecurityToken);
 	}
 
 }

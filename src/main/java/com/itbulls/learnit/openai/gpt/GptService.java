@@ -6,4 +6,6 @@ public interface GptService {
 
 	public String getAnswerToSingleQuery(String query, GptFunction... functions);
 
+	public String getAnswerToSingleQuery(String query, String userName, GptFunction... functions);
+
 }

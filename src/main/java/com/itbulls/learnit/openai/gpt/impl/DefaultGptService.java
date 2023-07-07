@@ -62,11 +62,28 @@ public class DefaultGptService implements GptService {
 	
 	@Override
 	public String getAnswerToSingleQuery(String query, GptFunction... gptFunctions) {
-		var request = new GptRequest();
-		request.setModel(model);
 		List<GptMessage> messages = new ArrayList<>();
 //		messages.add(new GptMessage(SYSTEM_ROLE, "You are a helpful assistant."));
 		messages.add(new GptMessage(USER_ROLE, query));
+		var request = prepareRequest(messages, gptFunctions);
+		return getResponseFromGpt(request);
+	}
+	
+	
+	@Override
+	public String getAnswerToSingleQuery(String query, String userName, GptFunction... gptFunctions) {
+		List<GptMessage> messages = new ArrayList<>();
+		if (userName != null) {
+			userName = userName.replaceAll("\\s+", "_");
+		}
+		messages.add(new GptMessage(USER_ROLE, query, userName));
+		var request = prepareRequest(messages, gptFunctions);
+		return getResponseFromGpt(request);
+	}
+	
+	private GptRequest prepareRequest(List<GptMessage> messages, GptFunction... gptFunctions) {
+		var request = new GptRequest();
+		request.setModel(model);
 		request.setMessages(messages);
 		request.setTemperature(temperature);
 		request.setPresencePenalty(presencePenalty);
@@ -75,7 +92,7 @@ public class DefaultGptService implements GptService {
 			List<GptFunction> functions = Arrays.asList(gptFunctions);
 			request.setFunctions(functions);
 		}
-		return getResponseFromGpt(request);
+		return request;
 	}
 	
 	private String getResponseFromGpt(GptRequest gptRequest) {
@@ -119,6 +136,9 @@ public class DefaultGptService implements GptService {
 				return responseBody;
 			}
 			GptResponse gptResponse = gson.fromJson(responseBody, GptResponse.class);
+			if (gptResponse.getChoices() == null) { // this means there are no answers at all
+				return responseBody;
+			}
 			GptMessage message = gptResponse.getChoices().get(0).getMessage();
 			
 			// optionally, we can check "finish_reason" of Choice object

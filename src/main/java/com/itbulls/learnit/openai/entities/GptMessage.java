@@ -30,6 +30,12 @@ public class GptMessage {
 		this.content = content;
 	}
 
+	public GptMessage(String role, String content, String userName) {
+		this.role = role;
+		this.content = content;
+		this.name = userName;
+	}
+
 	public String getRole() {
 		return role;
 	}

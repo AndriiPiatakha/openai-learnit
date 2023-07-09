@@ -4,4 +4,6 @@ public interface SlackService {
 
 	void processOnMentionEvent(String requestBody);
 
+	void removeAllMessagesFromChannel(String channelId);
+
 }

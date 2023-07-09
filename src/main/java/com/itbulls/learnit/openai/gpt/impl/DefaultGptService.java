@@ -81,6 +81,13 @@ public class DefaultGptService implements GptService {
 		return getResponseFromGpt(request);
 	}
 	
+
+	@Override
+	public String getAnswerToSingleQuery(List<GptMessage> context, GptFunction... gptFunctions) {
+		var request = prepareRequest(context, gptFunctions);
+		return getResponseFromGpt(request);
+	}
+	
 	private GptRequest prepareRequest(List<GptMessage> messages, GptFunction... gptFunctions) {
 		var request = new GptRequest();
 		request.setModel(model);

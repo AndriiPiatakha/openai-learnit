@@ -5,6 +5,7 @@ public class SlackRequestData {
 	private String authorName;
 	private String message;
 	private String channelIdFrom;
+	
 	public SlackRequestData(String authorName, String message, String channelIdFrom) {
 		this.authorName = authorName;
 		this.message = message;
@@ -28,7 +29,4 @@ public class SlackRequestData {
 	public void setChannelIdFrom(String channelIdFrom) {
 		this.channelIdFrom = channelIdFrom;
 	}
-	
-	
-
 }

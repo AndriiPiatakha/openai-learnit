@@ -1,7 +1,5 @@
 package com.itbulls.learnit.openai.entities;
 
-import java.util.Map;
-
 public class GptMessage {
 
 	public static final String SYSTEM_ROLE = "system";

@@ -1,5 +1,8 @@
 package com.itbulls.learnit.openai;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.itbulls.learnit.openai.context.SlackTeamContext;
 import com.itbulls.learnit.openai.entities.GptFunction;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties.MeasurementUnit;
@@ -20,8 +24,10 @@ import com.slack.api.methods.MethodsClient;
 @Configuration
 public class BeansConfiguration {
 
-	@Value("${slack.security.token}")
-	private String slackSecurityToken;
+	@Value("${slack.security.token.bot}")
+	private String slackSecurityTokenBot;
+	@Value("${slack.security.token.user}")
+	private String slackSecurityTokenUser;
 
 	@Bean
 	public Gson gson() {
@@ -62,9 +68,19 @@ public class BeansConfiguration {
 		return function;
 	}
 
-	@Bean
-	public MethodsClient slackMethodsClient() {
-		return Slack.getInstance().methods(slackSecurityToken);
+	@Bean("slackBotClient")
+	public MethodsClient slackMethodsClientBot() {
+		return Slack.getInstance().methods(slackSecurityTokenBot);
+	}
+	
+	@Bean("slackUserClient")
+	public MethodsClient slackMethodsClientUser() {
+		return Slack.getInstance().methods(slackSecurityTokenUser);
+	}
+	
+	@Bean("slackContextMap")
+	public Map<String, SlackTeamContext> slackContextMap() {
+		return new HashMap<>();
 	}
 
 }

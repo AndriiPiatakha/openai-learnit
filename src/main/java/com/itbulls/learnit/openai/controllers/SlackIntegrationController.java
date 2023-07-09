@@ -3,19 +3,17 @@ package com.itbulls.learnit.openai.controllers;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.google.gson.Gson;
 import com.itbulls.learnit.openai.slack.SlackService;
 
 @RestController
 public class SlackIntegrationController {
 
-	@Autowired
-	private Gson gson;
-	
 	@Autowired
 	private SlackService slackService;
 	
@@ -35,4 +33,13 @@ public class SlackIntegrationController {
 		
 	}
 
+	
+	/*
+	 * http://localhost:8080/v1/slack/delete-messages?channelId=C05FBQ4442E - remove in GPT channel
+	 */
+	@GetMapping("/v1/slack/delete-messages")
+	public String deleteMessagesFromChannel(@RequestParam String channelId) {
+		slackService.removeAllMessagesFromChannel(channelId);
+		return "deleted";
+	}
 }

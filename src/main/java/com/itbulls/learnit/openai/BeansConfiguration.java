@@ -28,6 +28,7 @@ public class BeansConfiguration {
 	private String slackSecurityTokenBot;
 	@Value("${slack.security.token.user}")
 	private String slackSecurityTokenUser;
+	
 
 	@Bean
 	public Gson gson() {
@@ -82,5 +83,4 @@ public class BeansConfiguration {
 	public Map<String, SlackTeamContext> slackContextMap() {
 		return new HashMap<>();
 	}
-
 }

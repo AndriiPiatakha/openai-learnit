@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.itbulls.learnit.openai.context.SlackTeamContext;
+import com.itbulls.learnit.openai.entities.GptFunction;
 import com.itbulls.learnit.openai.entities.GptMessage;
 import com.itbulls.learnit.openai.entities.SlackRequestData;
 import com.itbulls.learnit.openai.gpt.GptService;
@@ -58,6 +59,8 @@ public class DefaultSlackService implements SlackService {
 	@Autowired
 	@Qualifier("slackContextMap")
 	private Map<String, SlackTeamContext> slackContextMap;
+	@Autowired
+	private List<GptFunction> functions;
 	
 	@Value("${slack.max.messages.from.history}")
 	private Integer maxMessagesSlackHistory;
@@ -75,7 +78,8 @@ public class DefaultSlackService implements SlackService {
 	public void processOnMentionEvent(String requestBody) {
 		SlackRequestData requestData = extractSlackRequestData(requestBody);
 		List<GptMessage> contextMessages = extractContextForSlackRequest(requestData);
-		String gptResponseString = gptService.getAnswerToSingleQuery(contextMessages);
+		
+		String gptResponseString = gptService.getAnswerToSingleQuery(contextMessages, functions.toArray(GptFunction[]::new));
 		sendMessageToSlack(gptResponseString, requestData.getChannelIdFrom());
 	}
 

@@ -20,6 +20,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
@@ -51,6 +52,10 @@ public class DefaultGptService implements GptService {
 	private Integer retryAttempts;
 	@Value("${gpt.chat.sendrequest.waitforretry.seconds}")
 	private Integer waitSeconds;
+	@Value("${gpt.chat.characters.amount.max}")
+	private Integer maxCharacters;
+	@Value("${gpt.chat.characters.not.enough.context.limit}")
+	private String notEnoughContextLimitToProcessThisQueryMsg;
 	
 	@Autowired
 	private Gson gson;
@@ -139,6 +144,7 @@ public class DefaultGptService implements GptService {
 		
 		if (entity != null) {
 			String responseBody = EntityUtils.toString(entity);
+			System.out.println(responseBody);
 			if (statusCode == HttpStatus.SC_BAD_REQUEST) {
 				return responseBody;
 			}
@@ -158,17 +164,48 @@ public class DefaultGptService implements GptService {
 				gptMessage.setRole(FUNCTION_ROLE);
 				gptMessage.setName(functionCall.getName());
 				gptMessage.setContent(functionResponse);
-				gptRequest.getMessages().add(gptMessage);
+				
+				addMessageWithTokenLimit(gptRequest, gptMessage);
 				
 				// Functions submitted also counted as prompt tokens
 				// to optimze tokens usage - I don't send functions list the second time
 				gptRequest.setFunctions(null);
+				
+				/*
+				 * This check we need for the following scenario:
+				 * - Imagine that Jira response contains information about thousands of tickets, with long summary and descriptions.
+				 * According to the logic of addMessageWithTokenLimit() method, theoretically, we can remove all messages from the context,
+				 * and even not being able to add response from Jira because of the respect of token limit. Anyway, there is no sense to add 
+				 * function call response to the context if all context is removed, because in this case GPT will not be able to provide us 
+				 * with the answer, because original request was lost. 
+				 * 
+				 * Different workarounds can be applied here, but one of the most straightforward is to tell the end user that 
+				 * there is not enough context limit to process the request.
+				 */
+				if (gptRequest.getMessages().size() == 0) {
+					return notEnoughContextLimitToProcessThisQueryMsg;
+				}
 				return getResponseFromGpt(gptRequest);
 			}
 			
 			return message.getContent();
 		}
 		return "";
+	}
+
+
+	private void addMessageWithTokenLimit(GptRequest gptRequest, GptMessage gptMessage) {
+		List<GptMessage> contextMessages = gptRequest.getMessages();
+		if (contextMessages.size() == 0) {
+			return;
+		}
+		int contextLength = contextMessages.stream().mapToInt(m -> m.getContent().length()).sum();
+		if ( (contextLength + gptMessage.getContent().length()) < maxCharacters ) {
+			contextMessages.add(gptMessage);
+		} else {
+			contextMessages.remove(0); // remove the oldest message, because oldest are at the beginning of the list
+			addMessageWithTokenLimit(gptRequest, gptMessage);
+		}
 	}
 
 }

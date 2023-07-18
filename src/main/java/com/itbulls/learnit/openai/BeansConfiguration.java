@@ -14,10 +14,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.itbulls.learnit.openai.context.SlackTeamContext;
 import com.itbulls.learnit.openai.entities.GptFunction;
+import com.itbulls.learnit.openai.entities.NoProperties;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties.MeasurementUnit;
 import com.itbulls.learnit.openai.entities.functions.Function;
+import com.itbulls.learnit.openai.entities.functions.impl.GetJiraIssuesFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetWeatherInfoInLocationFunction;
+import com.itbulls.learnit.openai.jira.JiraService;
+import com.itbulls.learnit.openai.jira.impl.DefaultJiraService;
 import com.slack.api.Slack;
 import com.slack.api.methods.MethodsClient;
 
@@ -82,5 +86,24 @@ public class BeansConfiguration {
 	@Bean("slackContextMap")
 	public Map<String, SlackTeamContext> slackContextMap() {
 		return new HashMap<>();
+	}
+	
+	@Bean("gptJiraIssuesFunction")
+	public GptFunction gptJiraIssuesFunction(@Value("${gpt.function.jira.get.issues.name}") String functionName,
+			@Value("${gpt.function.jira.get.issues.description}") String description) {
+		var function = new GptFunction();
+		function.setName(functionName);
+		function.setDescription(description);
+		GptFunction.Parameters parameters = function.new Parameters();
+		parameters.setType("object");
+		NoProperties properties = new NoProperties();
+		parameters.setProperties(properties);
+		function.setParameters(parameters);
+		return function;
+	}
+	
+	@Bean("getJiraIssuesFunction")
+	public Function getJiraIssuesFunction() {
+		return new GetJiraIssuesFunction();
 	}
 }

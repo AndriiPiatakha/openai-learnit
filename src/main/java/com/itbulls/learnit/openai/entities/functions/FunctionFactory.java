@@ -1,21 +1,25 @@
 package com.itbulls.learnit.openai.entities.functions;
 
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
 import com.itbulls.learnit.openai.BeansConfiguration;
 
 @Service
-public class FunctionFactory {
+public class FunctionFactory implements ApplicationContextAware {
 	
-	private AnnotationConfigApplicationContext context;
+	private ApplicationContext applicationContext;
 
-    public FunctionFactory() {
-        context = new AnnotationConfigApplicationContext(BeansConfiguration.class);
-    }
-	
 	public Function getFunctionByName(String functionName) {
-		return (Function) context.getBean(functionName);
+		return (Function) applicationContext.getBean(functionName);
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
 	}
 
 }

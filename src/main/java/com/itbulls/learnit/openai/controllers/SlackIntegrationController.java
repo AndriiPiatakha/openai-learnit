@@ -35,7 +35,7 @@ public class SlackIntegrationController {
 
 	
 	/*
-	 * http://localhost:8080/v1/slack/delete-messages?channelId=C05FBQ4442E - remove in GPT channel
+	 * http://localhost:8080/v1/slack/delete-messages?channelId=C05HJTPMKPX - remove in GPT channel
 	 */
 	@GetMapping("/v1/slack/delete-messages")
 	public String deleteMessagesFromChannel(@RequestParam String channelId) {

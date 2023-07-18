@@ -1,13 +1,14 @@
 package com.itbulls.learnit.openai.entities.functions.impl;
 
-import com.itbulls.learnit.openai.entities.WeatherInfo;
-import com.itbulls.learnit.openai.entities.functions.Function;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.itbulls.learnit.openai.entities.WeatherInfo;
+import com.itbulls.learnit.openai.entities.functions.Function;
 
 public class GetWeatherInfoInLocationFunction implements Function {
 

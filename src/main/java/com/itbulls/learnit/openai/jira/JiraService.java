@@ -10,5 +10,4 @@ public interface JiraService {
 	List<JiraIssue> getJiraIssues();
 	String getFullJsonIssueById(String issueId);
 	String createJiraIssue(JiraIssueFields jiraIssueFields);
-
 }

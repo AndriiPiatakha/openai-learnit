@@ -45,7 +45,7 @@ public class DefaultSlackService implements SlackService {
 
 	private static final String MESSAGE_TYPE = "message";
 	private static final String CHANNEL_JOIN_SUBTYPE = "channel_join";
-	
+
 	@Autowired
 	private Gson gson;
 	@Autowired
@@ -61,7 +61,7 @@ public class DefaultSlackService implements SlackService {
 	private Map<String, SlackTeamContext> slackContextMap;
 	@Autowired
 	private List<GptFunction> functions;
-	
+
 	@Value("${slack.max.messages.from.history}")
 	private Integer maxMessagesSlackHistory;
 	@Value("${slack.wait.seconds.for.retry}")
@@ -84,7 +84,8 @@ public class DefaultSlackService implements SlackService {
 	public void processOnMentionEvent(String requestBody) {
 		SlackRequestData requestData = extractSlackRequestData(requestBody);
 		List<GptMessage> contextMessages = extractContextForSlackRequest(requestData);
-		String gptResponseString = gptService.getAnswerToSingleQuery(contextMessages, functions.toArray(GptFunction[]::new));
+		String gptResponseString = gptService.getAnswerToSingleQuery(contextMessages,
+				functions.toArray(GptFunction[]::new));
 		gptResponseString = addHyperReferencesToJira(gptResponseString);
 		sendMessageToSlack(gptResponseString, requestData.getChannelIdFrom());
 	}
@@ -93,75 +94,67 @@ public class DefaultSlackService implements SlackService {
 		Pattern jiraPattern = Pattern.compile("\\b(" + jiraProjectName + "-\\d+)\\b");
 		String jiraBaseUrl = jiraProjectUrl + browseUrl + "/";
 		StringBuilder result = new StringBuilder();
-        Matcher matcher = jiraPattern.matcher(gptResponseString);
+		Matcher matcher = jiraPattern.matcher(gptResponseString);
 
-        while (matcher.find()) {
-//            String ticketId = matcher.group();
-//            String hyperlink = String.format("(%s%s)", jiraBaseUrl, ticketId);
-//            matcher.appendReplacement(result, Matcher.quoteReplacement(hyperlink));
-            
-            String ticketId = matcher.group(1);
-            String hyperlink = String.format("(%s%s)", jiraBaseUrl, ticketId);
-            matcher.appendReplacement(result, "$0 " + hyperlink);
-        }
-        matcher.appendTail(result);
-        return result.toString();
+		while (matcher.find()) {
+			String ticketId = matcher.group(1);
+			String hyperlink = String.format("(%s%s)", jiraBaseUrl, ticketId);
+			matcher.appendReplacement(result, "$0 " + hyperlink);
+		}
+		matcher.appendTail(result);
+		return result.toString();
 	}
 
 	private List<GptMessage> extractContextForSlackRequest(SlackRequestData requestData) {
 		List<GptMessage> gptMessages = new ArrayList<>();
-		
+
 		try {
-			ConversationsHistoryResponse historyResponse = slackBotClient.conversationsHistory(r -> r
-			        .channel(requestData.getChannelIdFrom())
-			        .limit(maxMessagesSlackHistory));
-			
+			ConversationsHistoryResponse historyResponse = slackBotClient.conversationsHistory(
+					r -> r.channel(requestData.getChannelIdFrom()).limit(maxMessagesSlackHistory));
+
 			List<Message> slackMessages = historyResponse.getMessages(); // the latest messages at the beginning
 			SlackTeamContext slackTeamContext = slackContextMap.get(slackMessages.get(0).getTeam());
 			if (slackTeamContext == null) {
 				return gptMessages;
 			}
 			Map<String, String> userIdToNameMap = slackTeamContext.getUserIdToNameMap();
-			
+
 			int totalContextLength = 0;
 			for (Message message : slackMessages) {
-				if (message.getType().equals(MESSAGE_TYPE) && (message.getSubtype() == null 
-						|| !message.getSubtype().equals(CHANNEL_JOIN_SUBTYPE))) {
-				    String messageWithoutUserIds = substituteUserIdsWithNames(message.getText(), userIdToNameMap);
-				    int length = messageWithoutUserIds.length();
-				    if (totalContextLength + length > maxCharacters) {
-				    	break;
-				    } else {
+				if (message.getType().equals(MESSAGE_TYPE)
+						&& (message.getSubtype() == null || !message.getSubtype().equals(CHANNEL_JOIN_SUBTYPE))) {
+					String messageWithoutUserIds = substituteUserIdsWithNames(message.getText(), userIdToNameMap);
+					int length = messageWithoutUserIds.length();
+					if (totalContextLength + length > maxCharacters) {
+						break;
+					} else {
 						totalContextLength += length;
-				    }
-				    
-				    String authorName = userIdToNameMap.get(message.getUser());
-				    if (authorName == null) {
-				    	authorName = message.getUser();
-				    } else {
-				    	authorName = authorName.replaceAll("\\s+", "_");
-				    }
-				    
-				    if (authorName.equals(botAppName)) {
-				    	gptMessages.add(new GptMessage(ASSISTANT_ROLE, messageWithoutUserIds, authorName));
-				    } else {
-				    	gptMessages.add(new GptMessage(USER_ROLE, messageWithoutUserIds, authorName));
-				    }
+					}
+
+					String authorName = userIdToNameMap.get(message.getUser());
+					if (authorName == null) {
+						authorName = message.getUser();
+					} else {
+						authorName = authorName.replaceAll("\\s+", "_");
+					}
+
+					if (authorName.equals(botAppName)) {
+						gptMessages.add(new GptMessage(ASSISTANT_ROLE, messageWithoutUserIds, authorName));
+					} else {
+						gptMessages.add(new GptMessage(USER_ROLE, messageWithoutUserIds, authorName));
+					}
 				}
-			    
+
 			}
 			Collections.reverse(gptMessages); // to make the latest messages at the end
 		} catch (IOException | SlackApiException e) {
 			e.printStackTrace();
-		} 
+		}
 		return gptMessages;
 	}
 
 	private void sendMessageToSlack(String gptResponseString, String channelId) {
-		ChatPostMessageRequest request = ChatPostMessageRequest
-				.builder()
-				.channel(channelId)
-				.text(gptResponseString)
+		ChatPostMessageRequest request = ChatPostMessageRequest.builder().channel(channelId).text(gptResponseString)
 				.build();
 		try {
 			slackBotClient.chatPostMessage(request);
@@ -246,8 +239,7 @@ public class DefaultSlackService implements SlackService {
 			e.printStackTrace();
 		} catch (SlackApiException e) {
 			e.printStackTrace();
-			if (slackTeamContext != null && 
-					slackTeamContext.getUserIdToNameMap() != null) {
+			if (slackTeamContext != null && slackTeamContext.getUserIdToNameMap() != null) {
 				return slackTeamContext.getUserIdToNameMap();
 			} else {
 				throw e;
@@ -266,22 +258,18 @@ public class DefaultSlackService implements SlackService {
 			Conversation targetConversation = conversations.stream()
 					.filter(conversation -> conversation.getId().equals(channelId)).findFirst().orElse(null);
 			if (targetConversation != null) {
-				ConversationsHistoryResponse historyResponse = slackUserClient.conversationsHistory(
-						ConversationsHistoryRequest.builder().channel(targetConversation.getId()).limit(maxLimitToRemove).build());
+				ConversationsHistoryResponse historyResponse = slackUserClient
+						.conversationsHistory(ConversationsHistoryRequest.builder().channel(targetConversation.getId())
+								.limit(maxLimitToRemove).build());
 				List<Message> messages = historyResponse.getMessages();
 				for (Message message : messages) {
-					
+
 					for (int i = 0; i < retryAttempts; i++) {
 						try {
-							ChatDeleteResponse response = slackUserClient.chatDelete(
-				                    ChatDeleteRequest.builder()
-				                            .channel(channelId)
-				                            .asUser(true)
-				                            .ts(message.getTs())
-				                            .build()
-				            );
+							ChatDeleteResponse response = slackUserClient.chatDelete(ChatDeleteRequest.builder()
+									.channel(channelId).asUser(true).ts(message.getTs()).build());
 							break;
-						} catch (SlackApiException e) { 
+						} catch (SlackApiException e) {
 							e.printStackTrace();
 							try {
 								TimeUnit.SECONDS.sleep(waitForRetrySlack);
@@ -296,5 +284,4 @@ public class DefaultSlackService implements SlackService {
 			e.printStackTrace();
 		}
 	}
-
 }

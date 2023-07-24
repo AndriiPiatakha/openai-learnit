@@ -141,7 +141,6 @@ public class DefaultJiraService implements JiraService {
 	public String createJiraIssue(JiraIssueFields jiraIssueFields) {
 		String url = jiraApiBaseUrl + issueResourseUrl;
 		HttpPost httpPost = new HttpPost(url);
-		System.out.println(gson.toJson(jiraIssueFields));
 		httpPost.setHeader(HttpHeaders.AUTHORIZATION, "Basic " + jiraToken);
 		httpPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
 		CreateJiraIssueRequest jiraRequestBody = new CreateJiraIssueRequest();
@@ -172,7 +171,6 @@ public class DefaultJiraService implements JiraService {
 				}
 			 */
 			String response = EntityUtils.toString(httpEntity);
-			System.out.println(response);
 	        JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
 	        if (jsonObject.has("key")) {
 	        	String key = jsonObject.get("key").getAsString();
@@ -215,5 +213,4 @@ public class DefaultJiraService implements JiraService {
 		}
 		return null;
 	}
-
 }

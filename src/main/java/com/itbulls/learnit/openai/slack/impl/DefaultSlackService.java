@@ -74,13 +74,38 @@ public class DefaultSlackService implements SlackService {
 	private Integer maxCharacters;
 	@Value("${slack.max.messages.to.remove}")
 	private Integer maxLimitToRemove;
+	@Value("${jira.api.projet.name}")
+	private String jiraProjectName;
+	@Value("${jira.project.url}")
+	private String jiraProjectUrl;
+	@Value("${jira.browse.url}")
+	private String browseUrl;
 
 	public void processOnMentionEvent(String requestBody) {
 		SlackRequestData requestData = extractSlackRequestData(requestBody);
 		List<GptMessage> contextMessages = extractContextForSlackRequest(requestData);
-		
 		String gptResponseString = gptService.getAnswerToSingleQuery(contextMessages, functions.toArray(GptFunction[]::new));
+		gptResponseString = addHyperReferencesToJira(gptResponseString);
 		sendMessageToSlack(gptResponseString, requestData.getChannelIdFrom());
+	}
+
+	private String addHyperReferencesToJira(String gptResponseString) {
+		Pattern jiraPattern = Pattern.compile("\\b(" + jiraProjectName + "-\\d+)\\b");
+		String jiraBaseUrl = jiraProjectUrl + browseUrl + "/";
+		StringBuilder result = new StringBuilder();
+        Matcher matcher = jiraPattern.matcher(gptResponseString);
+
+        while (matcher.find()) {
+//            String ticketId = matcher.group();
+//            String hyperlink = String.format("(%s%s)", jiraBaseUrl, ticketId);
+//            matcher.appendReplacement(result, Matcher.quoteReplacement(hyperlink));
+            
+            String ticketId = matcher.group(1);
+            String hyperlink = String.format("(%s%s)", jiraBaseUrl, ticketId);
+            matcher.appendReplacement(result, "$0 " + hyperlink);
+        }
+        matcher.appendTail(result);
+        return result.toString();
 	}
 
 	private List<GptMessage> extractContextForSlackRequest(SlackRequestData requestData) {
@@ -92,7 +117,11 @@ public class DefaultSlackService implements SlackService {
 			        .limit(maxMessagesSlackHistory));
 			
 			List<Message> slackMessages = historyResponse.getMessages(); // the latest messages at the beginning
-			Map<String, String> userIdToNameMap = slackContextMap.get(slackMessages.get(0).getTeam()).getUserIdToNameMap();
+			SlackTeamContext slackTeamContext = slackContextMap.get(slackMessages.get(0).getTeam());
+			if (slackTeamContext == null) {
+				return gptMessages;
+			}
+			Map<String, String> userIdToNameMap = slackTeamContext.getUserIdToNameMap();
 			
 			int totalContextLength = 0;
 			for (Message message : slackMessages) {
@@ -153,7 +182,6 @@ public class DefaultSlackService implements SlackService {
 		String messageAuthorId = eventJsonObject.get("user").getAsString();
 		String channelId = eventJsonObject.get("channel").getAsString();
 		String teamId = jsonObject.get("team_id").getAsString();
-
 		Map<String, String> userIdToNameMap = null;
 		for (int i = 0; i < retryAttempts; i++) {
 			try {
@@ -168,7 +196,6 @@ public class DefaultSlackService implements SlackService {
 				}
 			}
 		}
-		
 		String messageAuthorName = userIdToNameMap.get(messageAuthorId);
 		message = substituteUserIdsWithNames(message, userIdToNameMap);
 		return new SlackRequestData(messageAuthorName, message, channelId);

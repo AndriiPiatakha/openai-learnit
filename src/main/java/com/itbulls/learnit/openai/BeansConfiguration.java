@@ -13,18 +13,20 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.itbulls.learnit.openai.context.SlackTeamContext;
+import com.itbulls.learnit.openai.entities.CreateJiraIssueParameterProperties;
 import com.itbulls.learnit.openai.entities.GptFunction;
 import com.itbulls.learnit.openai.entities.NoProperties;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties.MeasurementUnit;
 import com.itbulls.learnit.openai.entities.functions.Function;
+import com.itbulls.learnit.openai.entities.functions.impl.CreateJiraIssueFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetJiraIssuesFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetWeatherInfoInLocationFunction;
 import com.itbulls.learnit.openai.jira.JiraService;
 import com.itbulls.learnit.openai.jira.impl.DefaultJiraService;
 import com.slack.api.Slack;
 import com.slack.api.methods.MethodsClient;
-
+import static com.itbulls.learnit.openai.entities.ParameterProperties.*;
 @Configuration
 public class BeansConfiguration {
 
@@ -105,5 +107,42 @@ public class BeansConfiguration {
 	@Bean("getJiraIssuesFunction")
 	public Function getJiraIssuesFunction() {
 		return new GetJiraIssuesFunction();
+	}
+	
+	@Bean("gptCreateJiraIssueFunction")
+	public GptFunction gptCreateJiraIssueFunction(@Value("${gpt.function.jira.create.issue.name}") String functionName,
+			@Value("${gpt.function.jira.create.issue.description}") String description, 
+			@Value("${gpt.function.jira.create.issue.attr.assignee.desc}") String assigneeAttrDescription, 
+			@Value("${gpt.function.jira.create.issue.attr.description.desc}") String descrAttrDescription, 
+			@Value("${gpt.function.jira.create.issue.attr.issuetype.desc}") String issueTypeAttrDescription, 
+			@Value("${gpt.function.jira.create.issue.attr.issuetype.epic}") String epicIssueType, 
+			@Value("${gpt.function.jira.create.issue.attr.issuetype.story}") String storyIssueType, 
+			@Value("${gpt.function.jira.create.issue.attr.issuetype.task}") String taskIssueType, 
+			@Value("${gpt.function.jira.create.issue.attr.issuetype.bug}") String bugIssueType,
+			@Value("${gpt.function.jira.create.issue.attr.duedate.desc}") String dueDateAttrDescription, 
+			@Value("${gpt.function.jira.create.issue.attr.summary.format}") String dueDateFormat, 
+			@Value("${gpt.function.jira.create.issue.attr.summary.desc}") String summaryAttrDescription) {
+		var function = new GptFunction();
+		function.setName(functionName);
+		function.setDescription(description);
+		GptFunction.Parameters parameters = function.new Parameters();
+		parameters.setType("object");
+		
+		CreateJiraIssueParameterProperties properties = new CreateJiraIssueParameterProperties();
+		properties.setAssignee(properties.new Assignee(STRING_TYPE, assigneeAttrDescription));
+		properties.setDescription(properties.new Description(STRING_TYPE, descrAttrDescription));
+		properties.setIssueType(properties.new IssueType(STRING_TYPE, issueTypeAttrDescription, new String[] {epicIssueType, storyIssueType, taskIssueType, bugIssueType}));
+		properties.setDueDate(properties.new DueDate(STRING_TYPE, dueDateAttrDescription, dueDateFormat));
+		properties.setSummary(properties.new Summary(STRING_TYPE, summaryAttrDescription));
+				
+		parameters.setProperties(properties);
+		parameters.setRequired(new String[] {"summary", "description", "issue_type", "due_date"});
+		function.setParameters(parameters);
+		return function;
+	}
+	
+	@Bean("createJiraIssueFunction")
+	public Function getCreateJiraIssueFunction() {
+		return new CreateJiraIssueFunction();
 	}
 }

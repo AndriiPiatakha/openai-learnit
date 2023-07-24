@@ -5,5 +5,5 @@ package com.itbulls.learnit.openai.entities;
  *
  */
 public interface ParameterProperties {
-
+	String STRING_TYPE = "string";
 }

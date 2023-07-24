@@ -144,7 +144,6 @@ public class DefaultGptService implements GptService {
 		
 		if (entity != null) {
 			String responseBody = EntityUtils.toString(entity);
-			System.out.println(responseBody);
 			if (statusCode == HttpStatus.SC_BAD_REQUEST) {
 				return responseBody;
 			}

@@ -1,5 +1,8 @@
 package com.itbulls.learnit.openai;
 
+import static com.itbulls.learnit.openai.entities.ParameterProperties.INTEGER_TYPE;
+import static com.itbulls.learnit.openai.entities.ParameterProperties.STRING_TYPE;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,6 +17,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.itbulls.learnit.openai.context.SlackTeamContext;
 import com.itbulls.learnit.openai.entities.CreateJiraIssueParameterProperties;
+import com.itbulls.learnit.openai.entities.GetAvgVelocityParameterProperties;
 import com.itbulls.learnit.openai.entities.GptFunction;
 import com.itbulls.learnit.openai.entities.NoProperties;
 import com.itbulls.learnit.openai.entities.SendEmailParameterProperties;
@@ -21,15 +25,12 @@ import com.itbulls.learnit.openai.entities.WeatherParameterProperties;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties.MeasurementUnit;
 import com.itbulls.learnit.openai.entities.functions.Function;
 import com.itbulls.learnit.openai.entities.functions.impl.CreateJiraIssueFunction;
+import com.itbulls.learnit.openai.entities.functions.impl.GetAvgVelocityFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetJiraIssuesFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetWeatherInfoInLocationFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.SendEmailFunction;
-import com.itbulls.learnit.openai.jira.JiraService;
-import com.itbulls.learnit.openai.jira.impl.DefaultJiraService;
 import com.slack.api.Slack;
 import com.slack.api.methods.MethodsClient;
-import static com.itbulls.learnit.openai.entities.ParameterProperties.*;
-
 @Configuration
 public class BeansConfiguration {
 
@@ -177,5 +178,28 @@ public class BeansConfiguration {
 	@Bean("sendEmailFunction")
 	public Function sendEmailFunction() {
 		return new SendEmailFunction();
+	}
+	
+	@Bean("gptGetAvgVelocityFunction")
+	public GptFunction gptGetAverageVelocityFunction(@Value("${gpt.function.jira.avg.velocity.name}") String functionName,
+			@Value("${gpt.function.jira.avg.velocity.description}") String description, 
+			@Value("${gpt.function.jira.avg.velocity.attr.amount.sprints.desc}") String amountOfCompletedSprintsAttrDescription) {
+		var function = new GptFunction();
+		function.setName(functionName);
+		function.setDescription(description);
+		GptFunction.Parameters parameters = function.new Parameters();
+		parameters.setType("object");
+		
+		GetAvgVelocityParameterProperties properties = new GetAvgVelocityParameterProperties();
+		properties.setAmountOfCompletedSprints(properties.new AmountOfCompletedSprints(INTEGER_TYPE, amountOfCompletedSprintsAttrDescription));
+		parameters.setProperties(properties);
+		parameters.setRequired(new String[] {"amount_of_completed_sprints"});
+		function.setParameters(parameters);
+		return function;
+	}
+	
+	@Bean("getAvgVelocityFunction")
+	public Function getAvgVelocityFunction() {
+		return new GetAvgVelocityFunction();
 	}
 }

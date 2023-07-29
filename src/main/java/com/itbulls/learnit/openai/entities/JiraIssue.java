@@ -1,5 +1,7 @@
 package com.itbulls.learnit.openai.entities;
 
+import java.util.Objects;
+
 public class JiraIssue {
 	
 	private String key;
@@ -13,6 +15,7 @@ public class JiraIssue {
 	private String projectName;
 	private String priority;
 	private String issueType;
+	private Double storyPoints;
 
 	public void setKey(String key) {
 		this.key = key;
@@ -103,13 +106,35 @@ public class JiraIssue {
 		this.issueType = issueType;
 	}
 
-	
-	@Override
-	public String toString() {
-		return "JiraIssue [key=" + key + ", assignee=" + assignee + ", description=" + description + ", summary="
-				+ summary + ", status=" + status + ", dueDate=" + dueDate + ", projectKey=" + projectKey
-				+ ", projectId=" + projectId + ", projectName=" + projectName + ", priority=" + priority
-				+ ", issueType=" + issueType + "]";
+	public Double getStoryPoints() {
+		return storyPoints;
 	}
 
+	public void setStoryPoints(Double storyPoints) {
+		this.storyPoints = storyPoints;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(assignee, description, dueDate, issueType, key, priority, projectId, projectKey,
+				projectName, status, storyPoints, summary);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		JiraIssue other = (JiraIssue) obj;
+		return Objects.equals(assignee, other.assignee) && Objects.equals(description, other.description)
+				&& Objects.equals(dueDate, other.dueDate) && Objects.equals(issueType, other.issueType)
+				&& Objects.equals(key, other.key) && Objects.equals(priority, other.priority)
+				&& Objects.equals(projectId, other.projectId) && Objects.equals(projectKey, other.projectKey)
+				&& Objects.equals(projectName, other.projectName) && Objects.equals(status, other.status)
+				&& Objects.equals(storyPoints, other.storyPoints) && Objects.equals(summary, other.summary);
+	}
+	
 }

@@ -1,5 +1,8 @@
 package com.itbulls.learnit.openai.controllers;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,8 +35,43 @@ public class JiraIntegrationController {
 
 	@PostMapping("/v1/jira/issue")
 	public String createJiraIssue(@RequestBody String requestBody) {
-		jiraService.createJiraIssue(gson.fromJson(requestBody, JiraIssueFields.class));
-		return "created";
+		return jiraService.createJiraIssue(gson.fromJson(requestBody, JiraIssueFields.class));
+	}
+	
+	// Example: http://localhost:8080/v1/jira/board
+	@GetMapping("/v1/jira/board")
+	public String getJiraBoards() {
+		return jiraService.getJiraBoards();
+	}
+	
+	// Example: http://localhost:8080/v1/jira/board?project=SIB&type=scrum
+	@GetMapping(value = "/v1/jira/board", params = {"project", "type"})
+	public String getJiraBoards(@RequestParam String project, @RequestParam String type) {
+		return jiraService.getJiraBoard(project, type);
+	}
+	
+	// Example: http://localhost:8080/v1/jira/sprint?boardId=2
+	@GetMapping(value = "/v1/jira/sprint", params = "boardId")
+	public String getSprintsFromBoard(@RequestParam String boardId) {
+		return jiraService.getSprints(boardId);
+	}
+	
+	// Example: http://localhost:8080/v1/jira/sprint?boardId=2&lastCompletedAmount=3
+	@GetMapping(value = "/v1/jira/sprint", params = {"boardId", "lastCompletedAmount"})
+	public String getLastCompletedSprintAmount(@RequestParam String boardId, @RequestParam Integer lastCompletedAmount) {
+		return jiraService.getSprints(boardId, lastCompletedAmount);
 	}
 
+	// Example: http://localhost:8080/v1/jira/issue?sprints=1,2,3
+	@GetMapping(value = "/v1/jira/issue", params = "sprints")
+	public String getJiraIssuesFromSprints(@RequestParam String sprints) {
+		List<String> sprintIds = Arrays.asList(sprints.split(","));
+		return jiraService.getIssuesForSprints(sprintIds);
+	}
+	
+	// Example = http://localhost:8080/v1/jira/issue?lastCompletedSprintsAmount=3
+	@GetMapping(value = "/v1/jira/issue", params = "lastCompletedSprintsAmount")
+	public Double getAverageVelocityForSpecificAmountOfSprints(@RequestParam Integer lastCompletedSprintsAmount) {
+		return jiraService.getAvgVelocity(lastCompletedSprintsAmount);
+	}
 }

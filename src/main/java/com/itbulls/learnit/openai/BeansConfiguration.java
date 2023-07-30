@@ -20,6 +20,7 @@ import com.itbulls.learnit.openai.entities.CreateJiraIssueParameterProperties;
 import com.itbulls.learnit.openai.entities.GetAvgVelocityParameterProperties;
 import com.itbulls.learnit.openai.entities.GptFunction;
 import com.itbulls.learnit.openai.entities.NoProperties;
+import com.itbulls.learnit.openai.entities.PlanSprintParameterProperties;
 import com.itbulls.learnit.openai.entities.SendEmailParameterProperties;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties;
 import com.itbulls.learnit.openai.entities.WeatherParameterProperties.MeasurementUnit;
@@ -28,6 +29,7 @@ import com.itbulls.learnit.openai.entities.functions.impl.CreateJiraIssueFunctio
 import com.itbulls.learnit.openai.entities.functions.impl.GetAvgVelocityFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetJiraIssuesFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetWeatherInfoInLocationFunction;
+import com.itbulls.learnit.openai.entities.functions.impl.PlanSprintFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.SendEmailFunction;
 import com.slack.api.Slack;
 import com.slack.api.methods.MethodsClient;
@@ -201,5 +203,31 @@ public class BeansConfiguration {
 	@Bean("getAvgVelocityFunction")
 	public Function getAvgVelocityFunction() {
 		return new GetAvgVelocityFunction();
+	}
+	
+	@Bean("gptPlanSprintFunction")
+	public GptFunction planSprint(@Value("${gpt.function.jira.plan.sprint.name}") String functionName,
+			@Value("${gpt.function.jira.plan.sprint.description}") String description, 
+			@Value("${gpt.function.jira.plan.sprint.attr.sprint.name.desc}") String sprintNameAttrDescription,
+			@Value("${gpt.function.jira.plan.sprint.attr.capacity.desc}") String capacityAttrDescription) {
+		var function = new GptFunction();
+		function.setName(functionName);
+		function.setDescription(description);
+		GptFunction.Parameters parameters = function.new Parameters();
+		parameters.setType("object");
+		
+		PlanSprintParameterProperties properties = new PlanSprintParameterProperties();
+		properties.setSprintName(properties.new SprintName(STRING_TYPE, sprintNameAttrDescription));
+		properties.setCapacity(properties.new Capacity(INTEGER_TYPE, capacityAttrDescription));
+		
+		parameters.setProperties(properties);
+		parameters.setRequired(new String[] {"sprint_name", "capacity"});
+		function.setParameters(parameters);
+		return function;
+	}
+	
+	@Bean("planSprintFunction")
+	public Function planSprintFunction() {
+		return new PlanSprintFunction();
 	}
 }

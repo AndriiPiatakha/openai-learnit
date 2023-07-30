@@ -13,7 +13,7 @@ public class JiraIssue {
 	private String projectKey;
 	private String projectId;
 	private String projectName;
-	private String priority;
+	private Priority priority;
 	private String issueType;
 	private Double storyPoints;
 
@@ -89,11 +89,11 @@ public class JiraIssue {
 		this.projectName = projectName;
 	}
 
-	public String getPriority() {
+	public Priority getPriority() {
 		return priority;
 	}
 
-	public void setPriority(String priority) {
+	public void setPriority(Priority priority) {
 		this.priority = priority;
 	}
 
@@ -135,6 +135,49 @@ public class JiraIssue {
 				&& Objects.equals(projectId, other.projectId) && Objects.equals(projectKey, other.projectKey)
 				&& Objects.equals(projectName, other.projectName) && Objects.equals(status, other.status)
 				&& Objects.equals(storyPoints, other.storyPoints) && Objects.equals(summary, other.summary);
+	}
+
+	public int getNumericPriority() {
+		return this.priority.getId();
+	}
+	
+	
+	public class Priority {
+	    private String self;
+	    private String iconUrl;
+	    private String name;
+	    private Integer id;
+	    public String getSelf() {
+	        return self;
+	    }
+
+	    public void setSelf(String self) {
+	        this.self = self;
+	    }
+
+	    public String getIconUrl() {
+	        return iconUrl;
+	    }
+
+	    public void setIconUrl(String iconUrl) {
+	        this.iconUrl = iconUrl;
+	    }
+
+	    public String getName() {
+	        return name;
+	    }
+
+	    public void setName(String name) {
+	        this.name = name;
+	    }
+
+	    public Integer getId() {
+	        return id;
+	    }
+
+	    public void setId(Integer id) {
+	        this.id = id;
+	    }
 	}
 	
 }

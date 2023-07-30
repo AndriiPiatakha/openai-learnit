@@ -12,9 +12,11 @@ import java.util.stream.Collectors;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -127,7 +129,7 @@ public class DefaultJiraService implements JiraService {
 		jiraIssue.setProjectName(project.get("name").getAsString());
 
 		JsonObject priority = fields.getAsJsonObject("priority");
-		jiraIssue.setPriority(priority.get("name").getAsString());
+		jiraIssue.setPriority(gson.fromJson(priority, JiraIssue.Priority.class));
 
 		JsonObject issueType = fields.getAsJsonObject("issuetype");
 		jiraIssue.setIssueType(issueType.get("name").getAsString());
@@ -352,6 +354,119 @@ public class DefaultJiraService implements JiraService {
         	.mapToDouble(jiraIssue -> jiraIssue.getStoryPoints())
         	.sum();
 		return totalVelocity / jiraSprintIds.size();
+	}
+
+	@Override
+	public String getSprintByName(String sprintName) {
+		JiraSprint jiraSprint = getJiraSprintByName(sprintName);
+		return gson.toJson(jiraSprint);
+	}
+
+	private JiraSprint getJiraSprintByName(String sprintName) {
+		String jsonJiraBoard = getJiraBoard(jiraProjectName, scrumBoardType);
+        JsonObject jsonObject = JsonParser.parseString(jsonJiraBoard).getAsJsonObject();
+        String jiraBoardId = jsonObject.get("id").getAsString();
+        JiraSprint jiraSprint = getJiraSprint(sprintName, jiraBoardId);
+		return jiraSprint;
+	}
+
+	private JiraSprint getJiraSprint(String sprintName, String boardId) {
+		String jsonResponse = getSprints(boardId);
+		JsonObject jsonObject = gson.fromJson(jsonResponse, JsonObject.class);
+		JsonArray valuesArray = jsonObject.getAsJsonArray("values");
+
+		for (JsonElement element : valuesArray) {
+			JiraSprint sprint = gson.fromJson(element, JiraSprint.class);
+			if (sprint.getName().equalsIgnoreCase(sprintName)) {
+				return sprint;
+			}
+			
+		}
+		return null;
+	}
+
+	@Override
+	public String setSprintForWorkItem(String sprintName, String workItemId) {
+		JiraSprint jiraSprint = getJiraSprintByName(sprintName);
+		if (jiraSprint == null) {
+			return "No sprint found with this name";
+		}
+		
+		/*
+		 To update sprint we need to send put request
+		 {
+			  "update": {
+			    "customfield_10020": [{"set": 4}]
+			  }
+		 }
+		 
+		 */
+		String url = jiraApiBaseUrl + issueResourseUrl + "/" + workItemId;
+		HttpPut httpPut = new HttpPut(url);
+		httpPut.setHeader(HttpHeaders.AUTHORIZATION, "Basic " + jiraToken);
+		httpPut.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+
+		String requestBody = String.format("{\"update\": {\"customfield_10020\": [{\"set\": %d}]}}", jiraSprint.getId());
+        httpPut.setEntity(new StringEntity(requestBody, "UTF-8"));
+
+        // Execute the request and get the response
+        try {
+			HttpResponse response = httpClient.execute(httpPut);
+			if (response.containsHeader("Issue does not exist or you do not have permission to see it")) {
+				return "No issue with such ID found";
+			}
+			int statusCode = response.getStatusLine().getStatusCode();
+			if (statusCode == HttpStatus.SC_NO_CONTENT) {
+				return "Issue was updated";
+			};
+			
+			// for example: {"errorMessages":["Issue can be assigned only active or future sprints."],"errors":{}}
+			if (statusCode == HttpStatus.SC_BAD_REQUEST) {
+				return EntityUtils.toString(response.getEntity());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	@Override
+	public String getBacklogItems() {
+		String url = jiraApiBaseUrl + searchResourseUrl + "?jql=project=" + jiraProjectName 
+				+ "%20AND%20status%20not%20in%20(Closed,Resolved)%20AND%20Sprint%20IS%20EMPTY&maxResults=" + maxResults;
+		return executeGetRequest(url);
+	}
+
+	@Override
+	public String planSprintWithCapacityByPriority(String sprintName, Integer capacity) {
+		List<JiraIssue> jiraIssuesList = new ArrayList<>();
+		String responseString = getBacklogItems();
+
+		// Parse JSON response using Gson's JsonParser
+		JsonObject jsonObject = JsonParser.parseString(responseString).getAsJsonObject();
+		JsonArray issuesArray = jsonObject.getAsJsonArray("issues");
+
+		for (JsonElement issueElement : issuesArray) {
+			JsonObject issueObject = issueElement.getAsJsonObject();
+			JiraIssue jiraIssue = convertJsonToJiraIssue(issueObject);
+			jiraIssuesList.add(jiraIssue);
+		}
+		
+		jiraIssuesList.sort( (issue1, issue2) -> issue1.getNumericPriority() - issue2.getNumericPriority());
+		double storyPointsCounter = 0;
+		List<JiraIssue> issuesFiltered = new ArrayList<>();
+		for (JiraIssue jiraIssue : jiraIssuesList) {
+			if (jiraIssue.getStoryPoints() != null && (storyPointsCounter + jiraIssue.getStoryPoints() <= capacity)) {
+				issuesFiltered.add(jiraIssue);
+				storyPointsCounter += jiraIssue.getStoryPoints();
+			}
+		}
+		
+		for (JiraIssue jiraIssue : issuesFiltered) {
+			setSprintForWorkItem(sprintName, jiraIssue.getKey());
+		}
+		return String.format("Sprint %s was planned successfully considering capacity %d. List of user stories added to Sprint: %s", 
+				sprintName, capacity, gson.toJson(issuesFiltered));
 	}
 	
 }

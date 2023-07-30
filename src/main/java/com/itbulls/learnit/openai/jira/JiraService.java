@@ -16,4 +16,8 @@ public interface JiraService {
 	String getSprints(String boardId, Integer lastCompletedAmount);
 	String getIssuesForSprints(List<String> sprintIds);
 	Double getAvgVelocity(Integer lastCompletedSprintsAmount);
+	String getSprintByName(String sprintName);
+	String setSprintForWorkItem(String sprintName, String workItemId);
+	String getBacklogItems();
+	String planSprintWithCapacityByPriority(String sprintName, Integer capacity);
 }

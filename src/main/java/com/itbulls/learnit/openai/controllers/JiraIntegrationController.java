@@ -97,12 +97,18 @@ public class JiraIntegrationController {
 		} else {
 			return "";
 		}
-		
 	}
 	
 	// Example: http://localhost:8080/v1/jira/planning?sprintName=Sprint 4&capacity=10
 	@GetMapping(value = "/planning", params = {"sprintName", "capacity"})
 	public String prepareSprintBasedOnCapacityAndPriority(@RequestParam String sprintName, @RequestParam Integer capacity) {
 		return jiraService.planSprintWithCapacityByPriority(sprintName, capacity);
+	}
+	
+	
+	// Example: http://localhost:8080/v1/jira/risk
+	@GetMapping("/risk")
+	public String getRisks() {
+		return gson.toJson(jiraService.getJiraRisks());
 	}
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.itbulls.learnit.openai.entities.JiraIssue;
 import com.itbulls.learnit.openai.entities.JiraIssueFields;
+import com.itbulls.learnit.openai.entities.JiraRisk;
 
 public interface JiraService {
 
@@ -20,4 +21,6 @@ public interface JiraService {
 	String setSprintForWorkItem(String sprintName, String workItemId);
 	String getBacklogItems();
 	String planSprintWithCapacityByPriority(String sprintName, Integer capacity);
+	String getRisks();
+	List<JiraRisk> getJiraRisks();
 }

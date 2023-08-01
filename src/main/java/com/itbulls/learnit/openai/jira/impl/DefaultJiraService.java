@@ -31,6 +31,7 @@ import com.google.gson.JsonParser;
 import com.itbulls.learnit.openai.entities.CreateJiraIssueRequest;
 import com.itbulls.learnit.openai.entities.JiraIssue;
 import com.itbulls.learnit.openai.entities.JiraIssueFields;
+import com.itbulls.learnit.openai.entities.JiraRisk;
 import com.itbulls.learnit.openai.entities.JiraSprint;
 import com.itbulls.learnit.openai.jira.JiraService;
 
@@ -102,6 +103,30 @@ public class DefaultJiraService implements JiraService {
 
 	private JiraIssue convertJsonToJiraIssue(JsonObject issueObject) {
 		JiraIssue jiraIssue = new JiraIssue();
+		populateJiraIssueFields(jiraIssue, issueObject);
+		return jiraIssue;
+	}
+	
+	private JiraRisk convertJsonToJiraRisk(JsonObject issueObject) {
+		JiraRisk jiraRisk = new JiraRisk();
+		populateJiraIssueFields(jiraRisk, issueObject);
+		JsonObject fields = issueObject.getAsJsonObject("fields");
+		if (fields.has("customfield_10004") && !fields.get("customfield_10004").isJsonNull()) {
+			jiraRisk.setImpact(fields.getAsJsonObject("customfield_10004").get("value").getAsString());
+		}
+		if (fields.has("customfield_10038") && !fields.get("customfield_10038").isJsonNull()) {
+			jiraRisk.setProbability(fields.getAsJsonObject("customfield_10038").get("value").getAsString());
+		}
+		if (fields.has("customfield_10035") && !fields.get("customfield_10035").isJsonNull()) {
+			jiraRisk.setRiskResponseStrategy(fields.getAsJsonObject("customfield_10035").get("value").getAsString());
+		}
+		if (fields.has("customfield_10036") && !fields.get("customfield_10036").isJsonNull()) {
+			jiraRisk.setMitigationPlan(fields.get("customfield_10036").getAsString());
+		}
+		return jiraRisk;
+	}
+	
+	private void populateJiraIssueFields(JiraIssue jiraIssue, JsonObject issueObject) {
 		jiraIssue.setKey(issueObject.get("key").getAsString());
 		JsonObject fields = issueObject.getAsJsonObject("fields");
 		if (fields.has("assignee") && !fields.get("assignee").isJsonNull()) {
@@ -133,7 +158,6 @@ public class DefaultJiraService implements JiraService {
 
 		JsonObject issueType = fields.getAsJsonObject("issuetype");
 		jiraIssue.setIssueType(issueType.get("name").getAsString());
-		return jiraIssue;
 	}
 
 	@Override
@@ -467,6 +491,30 @@ public class DefaultJiraService implements JiraService {
 		}
 		return String.format("Sprint %s was planned successfully considering capacity %d. List of user stories added to Sprint: %s", 
 				sprintName, capacity, gson.toJson(issuesFiltered));
+	}
+
+	@Override
+	public String getRisks() {
+		String url = jiraApiBaseUrl + searchResourseUrl + "?jql=project=" + jiraProjectName 
+				+ "%20AND%20issueType=Risk&maxResults=" + maxResults;
+		return executeGetRequest(url);
+	}
+
+	@Override
+	public List<JiraRisk> getJiraRisks() {
+		List<JiraRisk> risks = new ArrayList<>();
+		String responseString = getRisks();
+
+		// Parse JSON response using Gson's JsonParser
+		JsonObject jsonObject = JsonParser.parseString(responseString).getAsJsonObject();
+		JsonArray issuesArray = jsonObject.getAsJsonArray("issues");
+
+		for (JsonElement issueElement : issuesArray) {
+			JsonObject issueObject = issueElement.getAsJsonObject();
+			JiraRisk jiraIssue = convertJsonToJiraRisk(issueObject);
+			risks.add(jiraIssue);
+		}
+		return risks;
 	}
 	
 }

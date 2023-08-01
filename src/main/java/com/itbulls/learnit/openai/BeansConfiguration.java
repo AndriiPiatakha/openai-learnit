@@ -28,6 +28,7 @@ import com.itbulls.learnit.openai.entities.functions.Function;
 import com.itbulls.learnit.openai.entities.functions.impl.CreateJiraIssueFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetAvgVelocityFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetJiraIssuesFunction;
+import com.itbulls.learnit.openai.entities.functions.impl.GetRisksFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.GetWeatherInfoInLocationFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.PlanSprintFunction;
 import com.itbulls.learnit.openai.entities.functions.impl.SendEmailFunction;
@@ -229,5 +230,24 @@ public class BeansConfiguration {
 	@Bean("planSprintFunction")
 	public Function planSprintFunction() {
 		return new PlanSprintFunction();
+	}
+	
+	@Bean("gptRisksFunction")
+	public GptFunction gptRisksFunction(@Value("${gpt.function.jira.get.risks.name}") String functionName,
+			@Value("${gpt.function.jira.get.risks.description}") String description) {
+		var function = new GptFunction();
+		function.setName(functionName);
+		function.setDescription(description);
+		GptFunction.Parameters parameters = function.new Parameters();
+		parameters.setType("object");
+		NoProperties properties = new NoProperties();
+		parameters.setProperties(properties);
+		function.setParameters(parameters);
+		return function;
+	}
+
+	@Bean("getRisksFunction")
+	public Function getRisksFunction() {
+		return new GetRisksFunction();
 	}
 }

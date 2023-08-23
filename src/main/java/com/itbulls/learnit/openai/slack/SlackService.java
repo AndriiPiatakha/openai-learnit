@@ -6,4 +6,6 @@ public interface SlackService {
 
 	void removeAllMessagesFromChannel(String channelId);
 
+	void processOnMentionEventViaConfluenceBot(String requestBody);
+
 }

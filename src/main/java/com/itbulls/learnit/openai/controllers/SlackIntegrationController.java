@@ -3,6 +3,7 @@ package com.itbulls.learnit.openai.controllers;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,11 +18,18 @@ public class SlackIntegrationController {
 	@Autowired
 	private SlackService slackService;
 	
+	@Value("${gpt.confluence.bot.enabled}")
+	private boolean isConfluenceBotEnabled;
+	
 	@PostMapping("/v1/slack")
 	public String processSlackEvent(@RequestBody String requestBody) {
 		System.out.println("Slack Event Received: " + requestBody);
 		CompletableFuture.runAsync(() -> {
-			slackService.processOnMentionEvent(requestBody);
+			if (isConfluenceBotEnabled) {
+				slackService.processOnMentionEventViaConfluenceBot(requestBody);
+			} else {
+				slackService.processOnMentionEvent(requestBody);
+			}
 		}).whenComplete((result, exception) -> {
 			if (exception != null) {
 				exception.printStackTrace();

@@ -80,6 +80,8 @@ public class DefaultSlackService implements SlackService {
 	private String jiraProjectUrl;
 	@Value("${jira.browse.url}")
 	private String browseUrl;
+	@Value("${gpt.confluence.bot.model.name}")
+	private String confluenceBotModelName;
 
 	public void processOnMentionEvent(String requestBody) {
 		SlackRequestData requestData = extractSlackRequestData(requestBody);
@@ -87,6 +89,13 @@ public class DefaultSlackService implements SlackService {
 		String gptResponseString = gptService.getAnswerToSingleQuery(contextMessages,
 				functions.toArray(GptFunction[]::new));
 		gptResponseString = addHyperReferencesToJira(gptResponseString);
+		sendMessageToSlack(gptResponseString, requestData.getChannelIdFrom());
+	}
+	
+	@Override
+	public void processOnMentionEventViaConfluenceBot(String requestBody) {
+		SlackRequestData requestData = extractSlackRequestData(requestBody);
+		String gptResponseString = gptService.getAnswerToSingleQuery(requestData.getMessage(), confluenceBotModelName);
 		sendMessageToSlack(gptResponseString, requestData.getChannelIdFrom());
 	}
 
@@ -284,4 +293,5 @@ public class DefaultSlackService implements SlackService {
 			e.printStackTrace();
 		}
 	}
+
 }

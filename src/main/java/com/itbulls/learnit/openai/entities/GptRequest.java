@@ -18,6 +18,7 @@ public class GptRequest {
 	private Map<String, Integer> logitBias;
 	private String user;
 	private List<GptFunction> functions;
+	private String prompt;
 	public String getModel() {
 		return model;
 	}
@@ -96,12 +97,11 @@ public class GptRequest {
 	public void setFunctions(List<GptFunction> functions) {
 		this.functions = functions;
 	}
-	@Override
-	public String toString() {
-		return "GptRequest [model=" + model + ", messages=" + messages + ", n=" + n + ", temperature=" + temperature
-				+ ", maxTokens=" + maxTokens + ", stream=" + stream + ", presencePenalty=" + presencePenalty
-				+ ", frequencyPenalty=" + frequencyPenalty + ", topP=" + topP + ", stop=" + stop + ", logitBias="
-				+ logitBias + ", user=" + user + ", functions=" + functions + "]";
+	
+	public String getPrompt() {
+		return prompt;
 	}
-
+	public void setPrompt(String prompt) {
+		this.prompt = prompt;
+	}
 }

@@ -52,6 +52,7 @@ public class GptResponse {
 		private Integer index;
 		private GptMessage message;
 		private String finishReason;
+		private String text; // for completions API
 		public Integer getIndex() {
 			return index;
 		}
@@ -70,9 +71,11 @@ public class GptResponse {
 		public void setFinishReason(String finishReason) {
 			this.finishReason = finishReason;
 		}
-		@Override
-		public String toString() {
-			return "Choice [index=" + index + ", message=" + message + ", finishReason=" + finishReason + "]";
+		public String getText() {
+			return text;
+		}
+		public void setText(String text) {
+			this.text = text;
 		}
 	}
 	

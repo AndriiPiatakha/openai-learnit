@@ -56,6 +56,14 @@ public class DefaultGptService implements GptService {
 	private Integer maxCharacters;
 	@Value("${gpt.chat.characters.not.enough.context.limit}")
 	private String notEnoughContextLimitToProcessThisQueryMsg;
+	@Value("${gpt.confluence.bot.stop.completions.separator}")
+	private String stopCompletionSeparator;
+	@Value("${gpt.confluence.bot.prompt.separator}")
+	private String promptSeparator;
+	@Value("${gpt.completions.api.url}")
+	private String completionsGptUrl;
+	@Value("${gpt.confluence.bot.enabled}")
+	private boolean isConfluenceBotEnabled;
 	
 	@Autowired
 	private Gson gson;
@@ -93,6 +101,23 @@ public class DefaultGptService implements GptService {
 		return getResponseFromGpt(request);
 	}
 	
+
+	@Override
+	public String getAnswerToSingleQuery(String prompt, String modelName) {
+		var request = prepareCompletionsRequest(prompt, modelName);
+		return getResponseFromGpt(request);
+	}
+	
+	private GptRequest prepareCompletionsRequest(String prompt, String modelName) {
+		var request = new GptRequest();
+		request.setPrompt(prompt + promptSeparator);
+		request.setModel(modelName);
+		request.setStop(stopCompletionSeparator);
+		request.setMaxTokens(maxTokens);
+		return request;
+	}
+
+
 	private GptRequest prepareRequest(List<GptMessage> messages, GptFunction... gptFunctions) {
 		var request = new GptRequest();
 		request.setModel(model);
@@ -125,12 +150,19 @@ public class DefaultGptService implements GptService {
 		}
 		return response;
 	}
+	
 
 	private HttpPost prepareHttpRequest(GptRequest gptRequest) {
 		String requestBody = gson.toJson(gptRequest);
 		String authorizationHeader = "Bearer " + chatGptApiKey;
 		String contentTypeHeader = "application/json";
-		HttpPost httpRequest = new HttpPost(chatGptUrl);
+		HttpPost httpRequest = null;
+		if (isConfluenceBotEnabled) {
+			httpRequest = new HttpPost(completionsGptUrl);
+		} else {
+			httpRequest = new HttpPost(chatGptUrl);
+		}
+		
 		httpRequest.setHeader(HttpHeaders.AUTHORIZATION, authorizationHeader);
 		httpRequest.setHeader(HttpHeaders.CONTENT_TYPE, contentTypeHeader);
 		httpRequest.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
@@ -152,6 +184,10 @@ public class DefaultGptService implements GptService {
 				return responseBody;
 			}
 			GptMessage message = gptResponse.getChoices().get(0).getMessage();
+			
+			if (message == null) { // this means we are dealing with Completions API
+				return gptResponse.getChoices().get(0).getText();
+			}
 			
 			// optionally, we can check "finish_reason" of Choice object
 			// In case of function call request, the finish reason is "function_call"
@@ -206,5 +242,6 @@ public class DefaultGptService implements GptService {
 			addMessageWithTokenLimit(gptRequest, gptMessage);
 		}
 	}
+
 
 }

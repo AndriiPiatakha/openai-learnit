@@ -19,5 +19,7 @@ public interface GptService {
 	 * @return answer from GPT
 	 */
 	public String getAnswerToSingleQuery(List<GptMessage> context, GptFunction... functions);
+	
+	public String getAnswerToSingleQuery(String query, String modelName);
 
 }

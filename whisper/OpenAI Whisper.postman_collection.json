@@ -1,0 +1,116 @@
+{
+	"info": {
+		"_postman_id": "0efd3d31-3508-42b9-8a6d-c08f3929e5d2",
+		"name": "OpenAI Whisper",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "28550408"
+	},
+	"item": [
+		{
+			"name": "Transcription",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer  {{openai_key}}",
+						"type": "default"
+					},
+					{
+						"key": "Content-Type",
+						"value": "multipart/form-data",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/PERSONAL/learnit/Java EE/Opena AI/27_whisper/audio demo for lesson/01_demo_file.mp3"
+						},
+						{
+							"key": "model",
+							"value": "whisper-1",
+							"type": "text"
+						},
+						{
+							"key": "response_format",
+							"value": "verbose_json",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://api.openai.com/v1/audio/transcriptions",
+					"protocol": "https",
+					"host": [
+						"api",
+						"openai",
+						"com"
+					],
+					"path": [
+						"v1",
+						"audio",
+						"transcriptions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Translation",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer  {{openai_key}}",
+						"type": "default"
+					},
+					{
+						"key": "Content-Type",
+						"value": "multipart/form-data",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/PERSONAL/learnit/Java EE/Opena AI/27_whisper/audio demo for lesson/02_demo_file.mp3"
+						},
+						{
+							"key": "model",
+							"value": "whisper-1",
+							"type": "text"
+						},
+						{
+							"key": "response_format",
+							"value": "text",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://api.openai.com/v1/audio/translations",
+					"protocol": "https",
+					"host": [
+						"api",
+						"openai",
+						"com"
+					],
+					"path": [
+						"v1",
+						"audio",
+						"translations"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -82,6 +82,10 @@ public class DefaultSlackService implements SlackService {
 	private String browseUrl;
 	@Value("${gpt.confluence.bot.model.name}")
 	private String confluenceBotModelName;
+	@Value("${gpt.system.instructions:#{null}}")
+	private String systemInstructions;
+	@Value("${gpt.system.admin.name:#{null}}")
+	private String adminName;
 
 	public void processOnMentionEvent(String requestBody) {
 		SlackRequestData requestData = extractSlackRequestData(requestBody);
@@ -116,6 +120,11 @@ public class DefaultSlackService implements SlackService {
 
 	private List<GptMessage> extractContextForSlackRequest(SlackRequestData requestData) {
 		List<GptMessage> gptMessages = new ArrayList<>();
+		
+		// if there is some System Instruction is configured in property, we will add it first
+		if (systemInstructions != null) {
+			gptMessages.add(new GptMessage(SYSTEM_ROLE, systemInstructions, adminName));
+		}
 
 		try {
 			ConversationsHistoryResponse historyResponse = slackBotClient.conversationsHistory(
